@@ -26,23 +26,22 @@ const observer = new MutationObserver((mutations) => {
   // A more robust way is to hook into `fetch` requests in the background script using declarativeNetRequest
   // or webRequest, but for MV3 content scripts, DOM observation + polling is our safest bet without breaking changes.
   
-  // We look for elements containing "Accepted" that appear in the test result / submission area
-  const successElements = Array.from(document.querySelectorAll('*')).filter(
-    el => el.textContent === 'Accepted' && el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE'
+  // We look for elements containing "Accepted" in the specific submission result area
+  const successElements = Array.from(document.querySelectorAll('[data-e2e-locator="submission-result"], .success, [class*="status-accepted"]')).filter(
+    el => el.textContent.trim() === 'Accepted'
   );
 
   // If we identify a newly generated "Accepted" tag and aren't already syncing
   if (successElements.length > 0 && !submissionInProgress) {
-    // Check if the closest container is a submission result panel.
-    // (This is highly susceptible to LeetCode DOM changes, so we will also provide a manual trigger in popup).
-    const isSubmissionResult = successElements.some(el => el.closest('[data-e2e-locator="submission-result"]') || el.className.includes('success'));
+    // Basic verification that we are on a problem page and not just a static history page
+    const isSubPage = window.location.pathname.includes('/submissions/');
     
-    if (isSubmissionResult) {
+    if (!isSubPage) {
       console.log(`LeetSmith: Detected "Accepted" state for slug: ${slug}`);
       submissionInProgress = true;
       triggerSync(slug);
       
-      // Reset lock after 30s to allow multiple submissions if the user modifies code
+      // Reset lock after 30s
       setTimeout(() => { submissionInProgress = false; }, 30000);
     }
   }
@@ -64,15 +63,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function triggerSync(slug) {
+  if (!slug) return { success: false, error: "Missing problem slug" };
+
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage({ type: 'FETCH_LATEST_SUBMISSION', slug }, (response) => {
-      if (chrome.runtime.lastError) {
-        console.error("LeetSmith: Worker communication error", chrome.runtime.lastError);
-        resolve({ success: false, error: "Communication Error" });
-      } else {
-        console.log("LeetSmith Sync Response:", response);
-        resolve(response);
-      }
-    });
+    try {
+      chrome.runtime.sendMessage({ type: 'FETCH_LATEST_SUBMISSION', slug }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.warn("LeetSmith: Connection lost (Extension may have been reloaded). Please refresh the page.");
+          resolve({ success: false, error: "Connection Lost. Please refresh the page." });
+        } else {
+          console.log("LeetSmith Sync Response:", response);
+          resolve(response || { success: false, error: "Empty response from background" });
+        }
+      });
+    } catch (e) {
+      console.error("LeetSmith: Failed to send message", e);
+      resolve({ success: false, error: "Message Failed" });
+    }
   });
 }
