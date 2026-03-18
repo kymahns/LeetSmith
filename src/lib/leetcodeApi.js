@@ -45,6 +45,10 @@ export async function fetchSubmissionDetails(submissionId) {
         code
         timestamp
         statusCode
+        runtimeDisplay
+        runtimePercentile
+        memoryDisplay
+        memoryPercentile
         lang {
           name
           verboseName
