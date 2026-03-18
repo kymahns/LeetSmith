@@ -1,14 +1,14 @@
-/* styles.css - Unified UI styles for popup */
+/* styles.css - Reforged Theme for LeetSmith */
 :root {
-  --bg-color: #f3f4f6;       /* Light grey background */
-  --panel-color: #ffffff;    /* White inputs/panels */
-  --text-color: #111827;     /* Dark text */
-  --text-muted: #6b7280;     /* Muted text */
-  --primary: #dc2626;        /* Forge red accent */
-  --primary-hover: #b91c1c;  /* Darker forge red */
-  --success: #059669;        /* Emerald green */
+  --bg-color: #fdf8ed;       /* Lighter cream background */
+  --panel-color: #f5e2c2;    /* User exact cream */
+  --text-color: #052b42;     /* User exact navy for text */
+  --text-muted: #1e3a5f;     /* Slightly lighter navy for muted text */
+  --primary: #052b42;        /* Navy accent */
+  --primary-hover: #031c2d;  /* Darkest navy hover */
+  --success: #059669;        
   --error: #dc2626;
-  --border: #d1d5db;         /* Standard border */
+  --border: #e0cea8;         /* Darker cream border */
 }
 
 * {
@@ -21,83 +21,92 @@ body {
   color: var(--text-color);
   margin: 0;
   padding: 16px;
-  width: 340px; /* Slightly wider to fit configs comfortably */
+  width: 320px;
 }
 
 /* Typography */
 h1, h2 {
   margin-top: 0;
   margin-bottom: 8px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 h1 {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   justify-content: center;
-  color: var(--primary); /* Red header text */
+  color: var(--text-color);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
 }
 
 p {
   color: var(--text-muted);
   font-size: 13px;
   margin: 0;
+  text-align: center;
+  line-height: 1.4;
 }
 
 .header {
   text-align: center;
-  border-bottom: 2px solid var(--border);
   padding-bottom: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+}
+
+.logo-img {
+  width: 50px;
+  height: 50px;
+  margin-bottom: 8px;
+  border-radius: 8px;
 }
 
 /* Layout */
 .view {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 /* Forms */
 .form-group {
-  margin-bottom: 12px;
+  margin-bottom: 4px;
 }
 
 label {
   display: block;
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 4px;
-  color: var(--text-color);
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--text-muted);
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 input[type="text"], input[type="password"] {
   width: 100%;
-  padding: 8px 10px;
-  background-color: var(--panel-color);
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  padding: 10px 12px;
+  background-color: var(--bg-color);
+  border: none;
+  border-radius: 6px;
   color: var(--text-color);
   font-size: 13px;
   transition: all 0.2s;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+  box-shadow: inset 0 1px 3px rgba(5, 43, 66, 0.05);
 }
 
 input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
 }
 
 .help-text {
   font-size: 11px;
   color: var(--text-muted);
-  margin-top: 4px;
+  margin-top: 6px;
   display: block;
 }
 
@@ -107,20 +116,18 @@ button {
   padding: 10px 16px;
   font-size: 13px;
   font-weight: 700;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 4px;
   cursor: pointer;
   background-color: var(--primary);
-  color: white;
+  color: #f5e2c2; /* Cream text on navy button for high contrast */
   text-transform: uppercase;
   letter-spacing: 0.5px;
   transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
 }
 
 button:hover {
   background-color: var(--primary-hover);
-  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
 }
 
 button:active {
@@ -130,15 +137,12 @@ button:active {
 button:disabled {
   background-color: var(--border);
   color: var(--text-muted);
-  box-shadow: none;
   cursor: not-allowed;
 }
 
 button.secondary {
-  background-color: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-color);
-  box-shadow: none;
+  border: none;
+  border-radius: 6px;
 }
 
 button.secondary:hover {
@@ -150,23 +154,16 @@ button.secondary:hover {
 .status-msg {
   display: none;
   margin-top: 8px;
-  padding: 8px;
+  padding: 10px;
   border-radius: 4px;
   font-size: 12px;
   text-align: center;
   font-weight: 600;
 }
-.status-msg.success { background-color: #d1fae5; color: var(--success); display: block; border: 1px solid #10b981; }
-.status-msg.error { background-color: #fee2e2; color: var(--error); display: block; border: 1px solid #ef4444; }
+.status-msg.success { background-color: rgba(5, 150, 105, 0.1); color: var(--success); display: block; }
+.status-msg.error { background-color: rgba(220, 38, 38, 0.1); color: var(--error); display: block; }
 
-/* Scrollbar styling for options */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-color);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-color); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }

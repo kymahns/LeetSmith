@@ -30,6 +30,11 @@
   ],
   "action": {
     "default_popup": "src/ui/popup.html",
-    "default_title": "LeetSmith Status"
+    "default_title": "LeetSmith"
+  },
+  "icons": {
+    "16": "assets/logo2.png",
+    "48": "assets/logo2.png",
+    "128": "assets/logo2.png"
   }
 }

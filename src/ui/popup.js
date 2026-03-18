@@ -1,71 +1,69 @@
-// popup.js - Unified LeetSmith Popup Logic
+// popup.js - LeetSmith Onboarding & Main Logic
 
-// ==========================================
-// ⚠️ REPLACE THIS WITH YOUR OAUTH CLIENT ID
-// ==========================================
 const GITHUB_CLIENT_ID = 'Ov23liGaqJV67v8esSRu';
 const VERCEL_AUTH_URL = 'https://leet-smith.vercel.app/api/github-auth';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Views
+  const onboardingView = document.getElementById('onboardingView');
   const mainView = document.getElementById('mainView');
-  const settingsView = document.getElementById('settingsView');
 
-  // Main buttons
+  // Elements
+  const gitAuthBtn = document.getElementById('gitAuthBtn');
+  const authSuccessMsg = document.getElementById('authSuccessMsg');
+  const repoSetupSection = document.getElementById('repoSetupSection');
+  const repoUrlInput = document.getElementById('githubRepoUrl');
+  const customFolderInput = document.getElementById('customFolder');
+  
+  const finishSetupBtn = document.getElementById('finishSetupBtn');
   const syncBtn = document.getElementById('syncNowBtn');
   const openSettingsBtn = document.getElementById('openSettingsBtn');
   const statusMsg = document.getElementById('statusMessage');
 
-  // Settings elements
-  const gitAuthBtn = document.getElementById('gitAuthBtn');
-  const authSuccessMsg = document.getElementById('authSuccessMsg');
-  const repoUrlInput = document.getElementById('githubRepoUrl');
-  const customFolderInput = document.getElementById('customFolder');
-  const saveBtn = document.getElementById('saveBtn');
-  const backBtn = document.getElementById('backBtn');
-
-  // Load existing settings
+  // Initialization
   chrome.storage.local.get(['githubPat', 'githubOwner', 'githubRepo', 'customFolder'], (items) => {
-    if (items.githubPat) {
-      gitAuthBtn.style.display = 'none';
-      authSuccessMsg.style.display = 'block';
+    if (items.githubPat && items.githubOwner && items.githubRepo) {
+      // Fully configured -> Go straight to main view
+      showMainView();
+    } else {
+      // Missing config -> Show onboarding
+      showOnboardingView();
+      if (items.githubPat) setAuthStateComplete();
     }
+
     if (items.githubOwner && items.githubRepo) {
       repoUrlInput.value = `https://github.com/${items.githubOwner}/${items.githubRepo}`;
     }
     if (items.customFolder) customFolderInput.value = items.customFolder;
   });
 
-  // Navigation Logic
-  openSettingsBtn.addEventListener('click', () => {
-    mainView.style.display = 'none';
-    settingsView.style.display = 'flex';
-    statusMsg.className = 'status-msg'; // clear errors
-  });
-
-  backBtn.addEventListener('click', () => {
-    settingsView.style.display = 'none';
+  function showMainView() {
+    onboardingView.style.display = 'none';
     mainView.style.display = 'flex';
     statusMsg.className = 'status-msg';
-  });
+  }
 
-  // OAUTH: Connect to GitHub
+  function showOnboardingView() {
+    mainView.style.display = 'none';
+    onboardingView.style.display = 'flex';
+    statusMsg.className = 'status-msg';
+  }
+
+  function setAuthStateComplete() {
+    gitAuthBtn.style.display = 'none';
+    authSuccessMsg.style.display = 'block';
+    
+    // Unlock the rest of the form
+    repoSetupSection.style.opacity = '1';
+    repoSetupSection.style.pointerEvents = 'auto';
+  }
+
+  // OAUTH Logic
   gitAuthBtn.addEventListener('click', () => {
-    if (GITHUB_CLIENT_ID === 'YOUR_GITHUB_CLIENT_ID_HERE') {
-      showStatus('Developer Error: Client ID not configured in popup.js', 'error');
-      return;
-    }
-
-    gitAuthBtn.textContent = 'Connecting...';
+    gitAuthBtn.textContent = 'Forging Connection...';
     gitAuthBtn.disabled = true;
 
-    const redirectUri = chrome.identity.getRedirectURL();
-    console.log("LeetSmith Redirect URI:", redirectUri);
-
-    // We must pass the exact redirectUri to GitHub. If this does not perfectly match the 
-    // "Authorization callback URL" in GitHub Developer Settings, GitHub will throw a 400 error
-    // which Chrome catches as "Authorization page could not be loaded."
-    const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo`;
+    const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=repo`;
 
     chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, async (responseUrl) => {
       if (chrome.runtime.lastError || !responseUrl) {
@@ -77,7 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Extract "code=" from url
       const urlParams = new URLSearchParams(new URL(responseUrl).search);
       const code = urlParams.get('code');
 
@@ -88,9 +85,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      gitAuthBtn.textContent = 'Verifying...';
+      gitAuthBtn.textContent = 'Tempering Token...';
 
-      // Exchange code via Vercel Backend
       try {
         const res = await fetch(VERCEL_AUTH_URL, {
           method: 'POST',
@@ -99,12 +95,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         const data = await res.json();
-        
         if (data.access_token) {
-          // Success! Save it to storage.
           chrome.storage.local.set({ githubPat: data.access_token }, () => {
-            gitAuthBtn.style.display = 'none';
-            authSuccessMsg.style.display = 'block';
+            setAuthStateComplete();
             showStatus('GitHub Account Linked!', 'success');
           });
         } else {
@@ -119,11 +112,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Settings Save Logic
-  saveBtn.addEventListener('click', () => {
+  // Finish Setup Logic / Repo Parsing
+  finishSetupBtn.addEventListener('click', () => {
     const rawUrl = repoUrlInput.value.trim();
     if (!rawUrl) {
-      showStatus('Repository URL is required.', 'error');
+      showStatus('Repository URL is required to forge solutions.', 'error');
       return;
     }
 
@@ -146,7 +139,6 @@ document.addEventListener('DOMContentLoaded', () => {
       customFolder: customFolderInput.value.trim()
     };
 
-    // Ensure they have authenticated
     chrome.storage.local.get(['githubPat'], (items) => {
       if (!items.githubPat) {
         showStatus('Please Connect to GitHub first.', 'error');
@@ -155,43 +147,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
       chrome.storage.local.set(config, () => {
         showStatus('Settings saved!', 'success');
-        setTimeout(() => {
-          settingsView.style.display = 'none';
-          mainView.style.display = 'flex';
-        }, 1000);
+        setTimeout(showMainView, 1000);
       });
     });
   });
 
-  // Sync Logic
+  // Return to Setup (Reconfigure)
+  openSettingsBtn.addEventListener('click', showOnboardingView);
+
+  // Manual Sync
   syncBtn.addEventListener('click', async () => {
     syncBtn.disabled = true;
     syncBtn.textContent = 'Forging...';
     statusMsg.className = 'status-msg';
     
-    // Query active tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
     if (!tab || !tab.url.includes('leetcode.com/problems/')) {
       showStatus('You must be on a LeetCode problem page.', 'error');
       syncBtn.disabled = false;
-      syncBtn.textContent = 'Sync Current Problem';
+      syncBtn.textContent = 'Forge Current Problem';
       return;
     }
 
-    // Check if configuration exists before trying to sync
     chrome.storage.local.get(['githubPat', 'githubOwner', 'githubRepo'], (items) => {
       if (!items.githubPat || !items.githubOwner || !items.githubRepo) {
-        showStatus('Please configure Settings first.', 'error');
+        showStatus('Please complete setup first.', 'error');
+        showOnboardingView();
         syncBtn.disabled = false;
-        syncBtn.textContent = 'Sync Current Problem';
+        syncBtn.textContent = 'Forge Current Problem';
         return;
       }
 
-      // Ping the content script to trigger sync
       chrome.tabs.sendMessage(tab.id, { type: 'MANUAL_SYNC' }, (response) => {
         syncBtn.disabled = false;
-        syncBtn.textContent = 'Sync Current Problem';
+        syncBtn.textContent = 'Forge Current Problem';
         
         if (chrome.runtime.lastError) {
           showStatus('Please refresh the LeetCode page and try again.', 'error');
@@ -210,7 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function showStatus(text, type) {
     statusMsg.textContent = text;
     statusMsg.className = `status-msg ${type}`;
-    // clear after showing
     setTimeout(() => { statusMsg.className = 'status-msg'; }, type === 'success' ? 4000 : 7000);
   }
 });
