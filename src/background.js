@@ -77,19 +77,26 @@ async function handleSubmission(slug) {
   
   const readmeContent = `# ${question.questionFrontendId}. ${question.title}\n\n**Difficulty:** ${difficultyStr}\n\n**Link:** [${question.title}](https://leetcode.com/problems/${question.titleSlug})\n\n---\n\n${question.content}`;
 
+  // Prepare Commit Message
+  const timeStr = details.runtimeDisplay || 'N/A';
+  const timePct = typeof details.runtimePercentile === 'number' ? details.runtimePercentile.toFixed(2) : '0.00';
+  const memStr = details.memoryDisplay || 'N/A';
+  const memPct = typeof details.memoryPercentile === 'number' ? details.memoryPercentile.toFixed(2) : '0.00';
+  const customCommitMsg = `Time: ${timeStr} (${timePct}%) | Memory: ${memStr} (${memPct}%) - LeetSmith`;
+
   // 5. Commit to GitHub
   console.log(`LeetSmith: Pushing to GitHub -> ${solutionPath}`);
   
   try {
     await commitFile(
       githubOwner, githubRepo, solutionPath,
-      solutionContent, `Sync solution for ${question.title}`, githubPat
+      solutionContent, customCommitMsg, githubPat
     );
 
     // Commit README as well
     await commitFile(
       githubOwner, githubRepo, readmePath,
-      readmeContent, `Add problem description for ${question.title}`, githubPat
+      readmeContent, customCommitMsg, githubPat
     );
   } catch (error) {
     console.error('LeetSmith: Failed to commit to GitHub', error);
