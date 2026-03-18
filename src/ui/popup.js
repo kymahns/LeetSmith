@@ -4,7 +4,7 @@
 // ⚠️ REPLACE THIS WITH YOUR OAUTH CLIENT ID
 // ==========================================
 const GITHUB_CLIENT_ID = 'Ov23liGaqJV67v8esSRu';
-const VERCEL_AUTH_URL = 'https://leet-smith-57wr8j8o0-nams-projects-e7f51bf4.vercel.app/api/github-auth';
+const VERCEL_AUTH_URL = 'https://leet-smith.vercel.app/api/github-auth';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Views
