@@ -1,5 +1,5 @@
 // background.js - Service worker for LeetSmith
-import { fetchLatestSubmission, fetchSubmissionDetails, fetchQuestionData } from './lib/leetcodeApi.js';
+import { fetchLatestSubmission, fetchSubmissionDetails, fetchQuestionData, fetchUserStats } from './lib/leetcodeApi.js';
 import { commitFile } from './lib/githubApi.js';
 
 // Language extension mapping
@@ -20,6 +20,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({ success: false, error: err.message });
       });
     return true; // Keep the message channel open for async response
+  } else if (request.type === 'FETCH_STATS') {
+    fetchUserStats()
+      .then(stats => sendResponse({ success: true, data: stats }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
   }
 });
 

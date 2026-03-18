@@ -33,18 +33,41 @@
       </div>
 
       <button id="finishSetupBtn" style="margin-top: 8px;">Complete Setup</button>
+      <button id="backToMainBtn" style="margin-top: 8px; display: none;">Back to Forge</button>
     </div>
   </div>
 
   <!-- MAIN SYNC VIEW -->
   <div id="mainView" class="view" style="display: none;">
-    <div class="header">
+    <div class="header" style="border: none;">
       <img src="/assets/logo2.png" alt="LeetSmith Logo" style="width: 32px; border-radius: 4px;" onerror="this.style.display='none'">
       <h1 style="font-size: 1.2rem; margin-bottom: 0;">LeetSmith</h1>
     </div>
 
+    <!-- The Forge Stats -->
+    <div id="forgeStatsContainer" style="display: none;">
+      <div class="forge-dashboard">
+        <div class="streak-header">
+          <span class="stat-label">Forge Flame</span>
+          <span class="stat-value" id="statStreak">- Days</span>
+        </div>
+        
+        <div class="center-flame">
+          <span style="font-size: 48px;">🔥</span>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-item"><span class="stat-value" id="statEasy">-</span><span class="stat-label">🥉 Copper</span></div>
+          <div class="stat-item"><span class="stat-value" id="statMedium">-</span><span class="stat-label">🥈 Steel</span></div>
+          <div class="stat-item"><span class="stat-value" id="statHard">-</span><span class="stat-label">🥇 Obsidian</span></div>
+          <div class="stat-item"><span class="stat-value" id="statTotal">-</span><span class="stat-label">Items Forged</span></div>
+        </div>
+      </div>
+    </div>
+    <div id="forgeStatsLoading" style="text-align:center; font-size:11px; color:var(--text-muted); margin: 4px 0;">Stoking the forge...</div>
+
     <button id="syncNowBtn">Forge Current Problem</button>
-    <button class="secondary" id="openSettingsBtn">⚙️ Reconfigure</button>
+    <button id="openSettingsBtn" style="margin-top: -6px; opacity: 0.9;">⚙️ Reconfigure</button>
   </div>
 
   <!-- GLOBAL STATUS MESSAGE -->

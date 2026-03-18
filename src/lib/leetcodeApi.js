@@ -108,3 +108,54 @@ export async function fetchQuestionData(slug) {
     throw error;
   }
 }
+
+/**
+ * Fetch the user's global profile stats
+ */
+export async function fetchUserStats() {
+  try {
+    // 1. Get identity
+    const globalRes = await fetch(LEETCODE_GRAPHQL_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: `query { userStatus { username } }` })
+    });
+    const globalData = await globalRes.json();
+    const username = globalData?.data?.userStatus?.username;
+    
+    if (!username) return null;
+
+    // 2. Fetch stats and streak
+    const statsQuery = `
+      query userProfileStats($username: String!) {
+        matchedUser(username: $username) {
+          submitStats: submitStatsGlobal {
+            acSubmissionNum {
+              difficulty
+              count
+            }
+          }
+          userCalendar {
+            streak
+          }
+        }
+      }
+    `;
+
+    const statsRes = await fetch(LEETCODE_GRAPHQL_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: statsQuery, variables: { username } })
+    });
+    const statsData = await statsRes.json();
+    const user = statsData?.data?.matchedUser;
+
+    return {
+      stats: user?.submitStats?.acSubmissionNum || [],
+      streak: user?.userCalendar?.streak || 0
+    };
+  } catch (err) {
+    console.error('LeetSmith: Error fetching user stats', err);
+    return null;
+  }
+}

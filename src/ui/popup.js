@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const customFolderInput = document.getElementById('customFolder');
   
   const finishSetupBtn = document.getElementById('finishSetupBtn');
+  const backToMainBtn = document.getElementById('backToMainBtn');
   const syncBtn = document.getElementById('syncNowBtn');
   const openSettingsBtn = document.getElementById('openSettingsBtn');
   const statusMsg = document.getElementById('statusMessage');
@@ -41,13 +42,53 @@ document.addEventListener('DOMContentLoaded', () => {
     onboardingView.style.display = 'none';
     mainView.style.display = 'flex';
     statusMsg.className = 'status-msg';
+    
+    // Fetch rendering stats async
+    const statContainer = document.getElementById('forgeStatsContainer');
+    const loadingContainer = document.getElementById('forgeStatsLoading');
+
+    chrome.runtime.sendMessage({ type: 'FETCH_STATS' }, (response) => {
+      loadingContainer.style.display = 'none';
+      if (response && response.success && response.data) {
+        const { stats, streak } = response.data;
+        statContainer.style.display = 'block';
+        
+        // Parse the stat array
+        let e = 0, m = 0, h = 0, t = 0;
+        stats.forEach(s => {
+          if (s.difficulty === 'Easy') e = s.count;
+          if (s.difficulty === 'Medium') m = s.count;
+          if (s.difficulty === 'Hard') h = s.count;
+          if (s.difficulty === 'All') t = s.count;
+        });
+
+        document.getElementById('statEasy').textContent = e;
+        document.getElementById('statMedium').textContent = m;
+        document.getElementById('statHard').textContent = h;
+        document.getElementById('statTotal').textContent = t;
+        document.getElementById('statStreak').textContent = `${streak} Days`;
+      } else {
+        showStatus('Could not load LeetCode Forge Stats.', 'error');
+      }
+    });
   }
 
   function showOnboardingView() {
     mainView.style.display = 'none';
     onboardingView.style.display = 'flex';
     statusMsg.className = 'status-msg';
+
+    // Show back button if already configured
+    chrome.storage.local.get(['githubPat', 'githubOwner', 'githubRepo'], (items) => {
+      if (items.githubPat && items.githubOwner && items.githubRepo) {
+        backToMainBtn.style.display = 'block';
+      } else {
+        backToMainBtn.style.display = 'none';
+      }
+    });
   }
+
+  backToMainBtn.addEventListener('click', showMainView);
 
   function setAuthStateComplete() {
     gitAuthBtn.style.display = 'none';
