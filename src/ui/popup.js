@@ -67,6 +67,21 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('statHard').textContent = h;
         document.getElementById('statTotal').textContent = t;
         document.getElementById('statStreak').textContent = `${streak} Days`;
+
+        // Daily Reminder Logic
+        const dailyReminder = document.getElementById('dailyReminder');
+        const calendar = JSON.parse(response.data.submissionCalendar || '{}');
+        const today = Math.floor(new Date().setHours(0, 0, 0, 0) / 1000).toString();
+        const submissionsToday = calendar[today] || 0;
+
+        dailyReminder.style.display = 'block';
+        if (submissionsToday > 0) {
+          dailyReminder.textContent = "The forge is roaring! Keep tempering that steel.";
+          dailyReminder.classList.add('roaring');
+        } else {
+          dailyReminder.textContent = "The forge is cold today. Stoke the fire with a solution!";
+          dailyReminder.classList.remove('roaring');
+        }
       } else {
         showStatus('Could not load LeetCode Forge Stats.', 'error');
       }

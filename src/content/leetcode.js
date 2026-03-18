@@ -42,8 +42,8 @@ const observer = new MutationObserver((mutations) => {
       submissionInProgress = true;
       triggerSync(slug);
       
-      // Reset lock after 10s to allow multiple submissions if the user modifies code
-      setTimeout(() => { submissionInProgress = false; }, 10000);
+      // Reset lock after 30s to allow multiple submissions if the user modifies code
+      setTimeout(() => { submissionInProgress = false; }, 30000);
     }
   }
 });
