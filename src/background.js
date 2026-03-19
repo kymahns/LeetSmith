@@ -2,6 +2,23 @@
 import { fetchLatestSubmission, fetchSubmissionDetails, fetchQuestionData, fetchUserStats } from './lib/leetcodeApi.js';
 import { commitFile } from './lib/githubApi.js';
 
+// When the extension is installed or reloaded, re-inject the content script
+// into any already-open LeetCode tabs so the user doesn't have to refresh.
+chrome.runtime.onInstalled.addListener(async () => {
+  const tabs = await chrome.tabs.query({ url: 'https://leetcode.com/problems/*' });
+  for (const tab of tabs) {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['src/content/leetcode.js']
+      });
+      console.log(`LeetSmith: Re-injected content script into tab ${tab.id}`);
+    } catch (err) {
+      console.warn(`LeetSmith: Could not re-inject into tab ${tab.id}:`, err.message);
+    }
+  }
+});
+
 // Language extension mapping
 const LANG_EXT = {
   'cpp': 'cpp', 'java': 'java', 'python': 'py', 'python3': 'py',
@@ -33,17 +50,17 @@ async function sleep(ms) {
 }
 
 function updateIcon(type) {
-  const iconPath = type === 'success' 
-    ? 'assets/logo_success.png' 
-    : type === 'error' 
-      ? 'assets/logo_error.png' 
-      : 'assets/logo2.png';
-  
-  chrome.action.setIcon({ path: iconPath });
+  if (type === 'success') {
+    chrome.action.setBadgeText({ text: '✓' });
+    chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
+  } else if (type === 'error') {
+    chrome.action.setBadgeText({ text: '✗' });
+    chrome.action.setBadgeBackgroundColor({ color: '#ef4444' });
+  }
 
   if (type !== 'normal') {
     setTimeout(() => {
-      chrome.action.setIcon({ path: 'assets/logo2.png' });
+      chrome.action.setBadgeText({ text: '' });
     }, 5000);
   }
 }
@@ -51,25 +68,39 @@ function updateIcon(type) {
 async function handleSubmission(slug) {
   console.log(`LeetSmith: Processing submission for problem slug -> ${slug}`);
   
-  // Wait a short moment to allow LeetCode's backend to register the submission
-  await sleep(2000);
-
-  // 1. Fetch Latest Submission
-  const latestSub = await fetchLatestSubmission(slug);
-  if (!latestSub) {
-    throw new Error('No recent submissions found for this problem.');
-  }
-
-  if (latestSub.statusDisplay !== 'Accepted') {
-    return { success: false, message: `Submission status is ${latestSub.statusDisplay}, skipping sync.` };
-  }
-
-  // Deduplication Check
   const storage = await chrome.storage.local.get(['syncedSubmissions', 'githubPat', 'githubOwner', 'githubRepo', 'customFolder']);
   const syncedSubs = storage.syncedSubmissions || [];
-  
+
+  // Wait a moment for LeetCode to process the submit
+  await sleep(3000);
+
+  let latestSub = null;
+  let attempts = 0;
+  const maxAttempts = 3;
+
+  while (attempts < maxAttempts) {
+    latestSub = await fetchLatestSubmission(slug);
+    
+    if (latestSub && latestSub.statusDisplay === 'Accepted') {
+      // If this ID is already synced, it might be the PREVIOUS submission.
+      // Wait and retry to see if the new one appears.
+      if (!syncedSubs.includes(latestSub.id)) {
+        break; // Found the new one!
+      }
+      console.log(`LeetSmith: Latest sub ${latestSub.id} already synced. Retrying in 3s...`);
+    } else {
+      console.log(`LeetSmith: Latest sub not accepted yet. Retrying in 3s...`);
+    }
+    
+    attempts++;
+    if (attempts < maxAttempts) await sleep(3000);
+  }
+
+  if (!latestSub || latestSub.statusDisplay !== 'Accepted') {
+    throw new Error('No new accepted submissions found after multiple checks.');
+  }
+
   if (syncedSubs.includes(latestSub.id)) {
-    console.log(`LeetSmith: Submission ${latestSub.id} already synced, skipping.`);
     return { success: true, message: 'Already synced.' };
   }
 

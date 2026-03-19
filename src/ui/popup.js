@@ -71,8 +71,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Daily Reminder Logic
         const dailyReminder = document.getElementById('dailyReminder');
         const calendar = JSON.parse(response.data.submissionCalendar || '{}');
-        const today = Math.floor(new Date().setHours(0, 0, 0, 0) / 1000).toString();
-        const submissionsToday = calendar[today] || 0;
+        
+        // LeetCode uses UTC midnight timestamps as keys
+        const now = new Date();
+        const utcMidnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) / 1000;
+        const submissionsToday = calendar[utcMidnight.toString()] || 0;
 
         dailyReminder.style.display = 'block';
         if (submissionsToday > 0) {

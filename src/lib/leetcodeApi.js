@@ -153,7 +153,8 @@ export async function fetchUserStats() {
 
     return {
       stats: user?.submitStats?.acSubmissionNum || [],
-      streak: user?.userCalendar?.streak || 0
+      streak: user?.userCalendar?.streak || 0,
+      submissionCalendar: user?.userCalendar?.submissionCalendar || '{}'
     };
   } catch (err) {
     console.error('LeetSmith: Error fetching user stats', err);

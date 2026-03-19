@@ -1,5 +1,14 @@
 // leetcode.js - Content script for LeetSmith
 
+// Guard against duplicate injection (e.g. after extension reload re-injects)
+if (window.__leetSmithLoaded) {
+  // Clean up old observer if it exists
+  if (window.__leetSmithObserver) {
+    window.__leetSmithObserver.disconnect();
+  }
+}
+window.__leetSmithLoaded = true;
+
 console.log("LeetSmith content script loaded.");
 
 // TODO: Implement robust submission detection (page state, network events, polling)
@@ -14,6 +23,12 @@ let submissionInProgress = false;
 
 // We monitor the DOM for success states "Accepted" to appear.
 const observer = new MutationObserver((mutations) => {
+  // If the extension was updated/reloaded, the context is invalidated.
+  if (!chrome.runtime?.id) {
+    observer.disconnect();
+    return;
+  }
+
   const slug = getProblemSlug();
   if (!slug) return;
 
@@ -33,21 +48,19 @@ const observer = new MutationObserver((mutations) => {
 
   // If we identify a newly generated "Accepted" tag and aren't already syncing
   if (successElements.length > 0 && !submissionInProgress) {
-    // Basic verification that we are on a problem page and not just a static history page
-    const isSubPage = window.location.pathname.includes('/submissions/');
+    console.log(`LeetSmith: Detected "Accepted" state for slug: ${slug}`);
+    submissionInProgress = true;
+    triggerSync(slug);
     
-    if (!isSubPage) {
-      console.log(`LeetSmith: Detected "Accepted" state for slug: ${slug}`);
-      submissionInProgress = true;
-      triggerSync(slug);
-      
-      // Reset lock after 30s
-      setTimeout(() => { submissionInProgress = false; }, 30000);
-    }
+    // Reset lock after 30s
+    setTimeout(() => { submissionInProgress = false; }, 30000);
   }
 });
 
 observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+
+// Store reference so re-injection can clean up the old observer
+window.__leetSmithObserver = observer;
 
 // Listen for messages from popup (Manual Sync)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -63,6 +76,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function triggerSync(slug) {
+  if (!chrome.runtime?.id) {
+    console.warn("LeetSmith: Context invalidated. Please refresh the page to reconnect the Forge.");
+    return { success: false, error: "Extension Context Invalidated" };
+  }
   if (!slug) return { success: false, error: "Missing problem slug" };
 
   return new Promise((resolve) => {
