@@ -153,11 +153,49 @@ export async function fetchUserStats() {
 
     return {
       stats: user?.submitStats?.acSubmissionNum || [],
-      streak: user?.userCalendar?.streak || 0,
+      streak: calculateCurrentStreak(user?.userCalendar?.submissionCalendar || '{}'),
       submissionCalendar: user?.userCalendar?.submissionCalendar || '{}'
     };
   } catch (err) {
     console.error('LeetSmith: Error fetching user stats', err);
     return null;
+  }
+}
+
+/**
+ * Calculates current streak from submission calendar
+ */
+function calculateCurrentStreak(submissionCalendar) {
+  try {
+    const calendar = JSON.parse(submissionCalendar);
+    const now = new Date();
+    // LeetCode uses UTC midnight timestamps as keys
+    const utcToday = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) / 1000;
+    
+    let currentStreak = 0;
+    let timestamp = utcToday;
+    
+    // Day duration in seconds
+    const ONE_DAY = 86400;
+
+    if (calendar[timestamp]) {
+      // Solved something today
+      while (calendar[timestamp]) {
+        currentStreak++;
+        timestamp -= ONE_DAY;
+      }
+    } else {
+      // Not yet solved today, check if yesterday was active
+      timestamp -= ONE_DAY;
+      while (calendar[timestamp]) {
+        currentStreak++;
+        timestamp -= ONE_DAY;
+      }
+    }
+    
+    return currentStreak;
+  } catch (e) {
+    console.error('LeetSmith: Error calculating streak', e);
+    return 0;
   }
 }
